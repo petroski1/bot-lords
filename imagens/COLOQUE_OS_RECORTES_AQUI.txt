@@ -1,0 +1,10 @@
+Coloque nesta pasta os recortes .png tirados do BlueStacks.
+
+Obrigatorios:
+botao_mapa.png, botao_castelo.png, lupa.png, campo_k.png, campo_x.png,
+campo_y.png, botao_ir.png, botao_coletar.png, botao_marchar.png, fechar_x.png
+
+Recursos (pelo menos um): recurso_minerio.png, recurso_madeira.png, etc.
+Opcional: verificacao.png
+
+Detalhes no arquivo GUIA_COMPLETO.md.

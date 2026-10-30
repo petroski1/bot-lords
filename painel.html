@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel de coleta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fundo:#e9eff0; --painel:#ffffff; --linha:#c9d6d9; --texto:#14262d; --suave:#5a727a;
+  --latao:#a87b1f; --latao-forte:#8a6413; --ok:#2f8a5b; --ruim:#b8463a; --campo:#f4f7f8;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --fundo:#0e222b; --painel:#15313c; --linha:#264955; --texto:#e4edef; --suave:#8ba7b0;
+    --latao:#d6aa4c; --latao-forte:#e8c36d; --ok:#5cc28a; --ruim:#e3705f; --campo:#0f2731;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--texto);
+  font:15px/1.5 "Saira",system-ui,"Segoe UI",sans-serif}
+.topo{display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  padding:18px 28px;border-bottom:2px solid var(--latao);background:var(--painel)}
+.topo h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.01em;margin-right:auto}
+.estado{display:flex;align-items:center;gap:10px;font-weight:600}
+.luz{width:12px;height:12px;border-radius:50%;background:var(--suave)}
+.luz.rodando{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 25%,transparent)}
+.luz.aguardando{background:var(--latao)}
+button{font:inherit;font-weight:600;cursor:pointer;border-radius:6px;border:1px solid var(--linha);
+  background:var(--campo);color:var(--texto);padding:7px 14px}
+button:hover{border-color:var(--latao)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--latao);outline-offset:2px}
+.principal{background:var(--latao);border-color:var(--latao);color:#fff}
+.principal:hover{background:var(--latao-forte);border-color:var(--latao-forte)}
+@media (prefers-color-scheme:dark){.principal{color:#14262d}}
+.perigo{color:var(--ruim);border-color:var(--ruim);background:transparent}
+.grade{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:22px;padding:24px 28px;max-width:1300px}
+@media (max-width:900px){.grade{grid-template-columns:1fr;padding:16px}}
+section{background:var(--painel);border:1px solid var(--linha);border-radius:8px;padding:18px 20px}
+section+section{margin-top:22px}
+h2{margin:0 0 12px;font-size:17px;font-weight:600}
+.numeros{display:flex;gap:28px;flex-wrap:wrap;padding:14px 28px 0;max-width:1300px}
+.numero b{display:block;font-size:30px;font-weight:700;line-height:1.1;color:var(--latao)}
+.numero span{color:var(--suave);font-size:13px}
+.tabela{width:100%;border-collapse:collapse}
+.tabela th{text-align:left;font-weight:500;color:var(--suave);font-size:13px;padding:0 6px 6px}
+.tabela td{padding:5px 6px;border-top:1px solid var(--linha);vertical-align:middle}
+.rolagem{overflow-x:auto}
+input[type=text],input[type=number]{font:inherit;width:100%;padding:6px 8px;border-radius:5px;
+  border:1px solid var(--linha);background:var(--campo);color:var(--texto)}
+input.curto{width:80px}
+.campos{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+label{display:block;font-size:13px;color:var(--suave)}
+label input{margin-top:4px}
+.dica{font-size:12.5px;color:var(--suave);margin:4px 0 0}
+.resultado{font-size:13px;color:var(--suave)}
+.acoes{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.msg{font-size:13.5px}
+.msg.ok{color:var(--ok)} .msg.ruim{color:var(--ruim)}
+details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px}
+.lista-img{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:14px}
+.lista-img li::before{content:"✕ ";color:var(--ruim);font-weight:700}
+.lista-img li.ok::before{content:"✓ ";color:var(--ok)}
+.log{background:var(--campo);border:1px solid var(--linha);border-radius:6px;height:340px;overflow:auto;
+  padding:10px 12px;font:13px/1.55 ui-monospace,Consolas,monospace;white-space:pre-wrap;margin:0}
+.atual{background:color-mix(in srgb,var(--latao) 14%,transparent)}
+.chave{appearance:none;width:38px;height:22px;border-radius:11px;background:var(--linha);position:relative;cursor:pointer;margin:0}
+.chave::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.chave:checked{background:var(--ok)} .chave:checked::after{left:19px}
+@media (prefers-reduced-motion:reduce){.chave::after{transition:none}}
+</style>
+</head>
+<body>
+<header class="topo">
+  <h1>Coleta automática</h1>
+  <div class="estado"><span class="luz" id="luz"></span><span id="estado">Parado</span></div>
+  <button class="principal" id="btnIniciar">Iniciar bot</button>
+  <button class="perigo" id="btnParar" hidden>Parar bot</button>
+</header>
+
+<div class="numeros">
+  <div class="numero"><b id="nMarchas">0</b><span>marchas enviadas</span></div>
+  <div class="numero"><b id="nRodadas">0</b><span>rodadas completas</span></div>
+  <div class="numero"><b id="nProxima">–</b><span>próxima rodada</span></div>
+</div>
+
+<main class="grade">
+  <div>
+    <section>
+      <h2>Contas</h2>
+      <div class="rolagem">
+        <table class="tabela">
+          <thead><tr><th>Ativa</th><th>Nome</th><th>Porta ADB</th><th>Castelo X</th><th>Castelo Y</th><th>Última rodada</th><th></th></tr></thead>
+          <tbody id="contas"></tbody>
+        </table>
+      </div>
+      <div class="acoes"><button id="btnAddConta">Adicionar conta</button></div>
+      <p class="dica">Cada conta fica numa instância do BlueStacks. A porta aparece em Configurações → Avançado de cada instância.</p>
+    </section>
+
+    <section>
+      <h2>Coleta</h2>
+      <div class="campos">
+        <label>Reino (K)<input type="number" id="reino"></label>
+        <label>Marchas por conta<input type="number" id="marchas_por_conta" min="1" max="6"></label>
+        <label>Telas para procurar<input type="number" id="max_arrastos" min="0" max="40"></label>
+        <label>Intervalo entre rodadas (min)<input type="number" id="intervalo_min" min="1"></label>
+      </div>
+      <p class="dica">“Telas para procurar” é quantas vezes o bot arrasta o mapa ao redor do castelo atrás de recursos livres.</p>
+      <details>
+        <summary>Ajustes avançados</summary>
+        <div class="campos" style="margin-top:12px">
+          <label>Caminho do ADB<input type="text" id="adb"></label>
+          <label>Precisão dos botões (0.5–0.99)<input type="number" step="0.01" id="confianca"></label>
+          <label>Precisão dos recursos (0.5–0.99)<input type="number" step="0.01" id="confianca_recurso"></label>
+          <label>Distância rótulo → campo (px)<input type="number" id="offset_campo"></label>
+        </div>
+        <p class="dica">Se o bot não acha um botão que está na tela, diminua a precisão. Se toca em coisas erradas, aumente.</p>
+      </details>
+      <div class="acoes">
+        <button class="principal" id="btnSalvar">Salvar configurações</button>
+        <span class="msg" id="msgSalvar"></span>
+      </div>
+    </section>
+  </div>
+
+  <div>
+    <section>
+      <h2>Imagens de referência</h2>
+      <ul class="lista-img" id="imgObrig"></ul>
+      <p class="dica" id="imgRecursos"></p>
+      <p class="dica">Coloque os recortes na pasta <b>imagens</b>, ao lado do painel.py.</p>
+    </section>
+    <section>
+      <h2>Registro</h2>
+      <pre class="log" id="log">Nada por enquanto. Clique em Iniciar bot.</pre>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let config = null, statusAtual = {};
+const NOMES_ESTADO = {parado:"Parado", rodando:"Rodando", aguardando:"Aguardando próxima rodada"};
+
+async function api(caminho, dados){
+  const op = dados ? {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(dados)} : {};
+  const r = await fetch(caminho, op);
+  return r.json();
+}
+
+function linhaConta(c, i){
+  const tr = document.createElement("tr");
+  tr.dataset.i = i;
+  const st = (statusAtual.contas||{})[c.nome];
+  if (statusAtual.conta_atual === c.nome) tr.className = "atual";
+  tr.innerHTML = `
+    <td><input type="checkbox" class="chave" data-k="ativa" ${c.ativa!==false?"checked":""} aria-label="Conta ativa"></td>
+    <td><input type="text" data-k="nome" value=""></td>
+    <td><input type="number" class="curto" data-k="porta" value="${c.porta}"></td>
+    <td><input type="number" class="curto" data-k="castelo_x" value="${c.castelo_x}"></td>
+    <td><input type="number" class="curto" data-k="castelo_y" value="${c.castelo_y}"></td>
+    <td class="resultado">${st ? st.hora+" · "+escapar(st.resultado) : "–"}</td>
+    <td style="white-space:nowrap"><button data-acao="testar">Testar</button> <button data-acao="remover" class="perigo" aria-label="Remover conta">✕</button></td>`;
+  tr.querySelector('[data-k=nome]').value = c.nome;
+  return tr;
+}
+function escapar(s){return String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]))}
+
+function lerContasDaTela(){
+  return [...$("contas").querySelectorAll("tr")].map(tr=>{
+    const v = k => tr.querySelector(`[data-k=${k}]`);
+    return {ativa:v("ativa").checked, nome:v("nome").value, porta:+v("porta").value,
+            castelo_x:+v("castelo_x").value, castelo_y:+v("castelo_y").value};
+  });
+}
+function desenharContas(){
+  const tb = $("contas"); tb.innerHTML = "";
+  config.contas.forEach((c,i)=>tb.appendChild(linhaConta(c,i)));
+}
+
+const CAMPOS = ["reino","marchas_por_conta","max_arrastos","intervalo_min","adb","confianca","confianca_recurso","offset_campo"];
+async function carregar(){
+  config = await api("/api/config");
+  CAMPOS.forEach(k=>$(k).value = config[k]);
+  desenharContas();
+  carregarImagens();
+}
+async function carregarImagens(){
+  const d = await api("/api/imagens");
+  $("imgObrig").innerHTML = d.obrigatorias.map(i=>`<li class="${i.ok?"ok":""}">${i.nome}.png</li>`).join("");
+  $("imgRecursos").textContent = d.recursos.length
+    ? `Recursos (${d.recursos.length}): ${d.recursos.join(", ")}`
+    : "Nenhuma imagem recurso_*.png ainda. Sem elas o bot não acha coletas no mapa.";
+}
+
+$("contas").addEventListener("click", async e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  const tr = b.closest("tr");
+  if (b.dataset.acao==="remover"){ config.contas = lerContasDaTela(); config.contas.splice(+tr.dataset.i,1); desenharContas(); }
+  if (b.dataset.acao==="testar"){
+    b.textContent="…"; b.disabled = true;
+    const r = await api("/api/testar",{porta:+tr.querySelector("[data-k=porta]").value, adb:$("adb").value});
+    b.disabled = false; b.textContent = r.ok ? "Conectado" : "Falhou";
+    b.title = r.mensagem; if(!r.ok) alert(r.mensagem);
+    setTimeout(()=>b.textContent="Testar",4000);
+  }
+});
+$("btnAddConta").onclick = ()=>{
+  config.contas = lerContasDaTela();
+  const ult = config.contas.at(-1);
+  config.contas.push({nome:"farm"+(config.contas.length+1), porta: ult? ult.porta+10 : 5555,
+                      castelo_x:0, castelo_y:0, ativa:true});
+  desenharContas();
+};
+$("btnSalvar").onclick = async ()=>{
+  const dados = {contas: lerContasDaTela()};
+  CAMPOS.forEach(k=>dados[k] = $(k).value);
+  const r = await api("/api/config", dados);
+  const m = $("msgSalvar");
+  m.className = "msg " + (r.ok?"ok":"ruim");
+  m.textContent = r.ok ? r.mensagem : r.erro;
+  if (r.ok) config.contas = dados.contas;
+};
+$("btnIniciar").onclick = async ()=>{ await api("/api/iniciar",{}); atualizar(); };
+$("btnParar").onclick = async ()=>{ await api("/api/parar",{}); $("estado").textContent="Parando…"; };
+
+async function atualizar(){
+  let s; try { s = await api("/api/status"); } catch { $("estado").textContent="Painel desconectado"; return; }
+  const mudouAtual = s.conta_atual !== statusAtual.conta_atual || JSON.stringify(s.contas)!==JSON.stringify(statusAtual.contas);
+  statusAtual = s;
+  $("luz").className = "luz " + s.estado;
+  $("estado").textContent = NOMES_ESTADO[s.estado] + (s.conta_atual ? ` (${s.conta_atual})` : "");
+  $("btnIniciar").hidden = s.estado!=="parado";
+  $("btnParar").hidden = s.estado==="parado";
+  $("nMarchas").textContent = s.marchas;
+  $("nRodadas").textContent = s.rodadas;
+  if (s.proxima){
+    const seg = Math.max(0, Math.round(s.proxima - Date.now()/1000));
+    $("nProxima").textContent = `${Math.floor(seg/60)}:${String(seg%60).padStart(2,"0")}`;
+  } else $("nProxima").textContent = "–";
+  const log = $("log");
+  if (s.log.length){
+    const noFim = log.scrollTop + log.clientHeight >= log.scrollHeight - 20;
+    log.textContent = s.log.join("\n");
+    if (noFim) log.scrollTop = log.scrollHeight;
+  }
+  if (mudouAtual && document.activeElement.closest("#contas")===null){
+    config.contas = lerContasDaTela(); desenharContas();
+  }
+}
+carregar(); atualizar(); setInterval(atualizar, 2000);
+</script>
+</body>
+</html>

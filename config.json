@@ -1,0 +1,19 @@
+{
+  "adb": "C:\\platform-tools\\adb.exe",
+  "reino": 1067,
+  "marchas_por_conta": 2,
+  "max_arrastos": 12,
+  "intervalo_min": 30,
+  "confianca": 0.85,
+  "confianca_recurso": 0.75,
+  "offset_campo": 60,
+  "contas": [
+    {
+      "nome": "farm1",
+      "porta": 5555,
+      "castelo_x": 314,
+      "castelo_y": 290,
+      "ativa": true
+    }
+  ]
+}
