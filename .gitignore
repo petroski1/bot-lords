@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 tela*.png
+logs/
+erros/
+estatisticas.json

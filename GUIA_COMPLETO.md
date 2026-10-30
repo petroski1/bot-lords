@@ -18,7 +18,7 @@ Ele funciona como um "dedo robô": tira prints da tela, reconhece botões e recu
 - Repete a cada intervalo definido no painel
 - Pausa a conta e avisa se aparecer uma tela de verificação
 
-**O que ele ainda não faz:** escolher tropas (usa a formação que o jogo sugere), trocar de conta pelo menu do jogo, escolher tipo ou nível de recurso, nem mandar recursos para a conta principal. Veja a seção Melhorias futuras.
+**Funções extras (ligadas por recortes opcionais):** contar filas livres, reabrir o jogo se cair, filtrar tipo e nível de recurso, escolher formação, horários de funcionamento, aviso no Telegram, ajuda da guilda e recompensas diárias, enviar recursos à conta principal, trocar de personagem numa só instância, estatísticas por dia, prints automáticos quando trava e ajuste para outra resolução. Veja a seção Funções extras.
 
 ## Requisitos
 
@@ -86,6 +86,9 @@ C:\bot_lords\
 ├── iniciar_painel.bat    atalho para abrir tudo
 ├── config.json           guarda as configurações (o painel edita)
 ├── GUIA_COMPLETO.md      este guia
+├── estatisticas.json     contadores por dia (criado sozinho)
+├── logs\                 registro de cada dia (criado sozinho)
+├── erros\                prints de onde travou (criado sozinho)
 └── imagens\              recortes dos botões e recursos (.png)
 ```
 
@@ -258,23 +261,32 @@ A cada rodada o bot relê o config.json e passa por cada conta ativa:
 
 Depois da última conta, espera o intervalo. Se aparecer `verificacao.png`, a conta é pausada até a próxima rodada. O bot também roda sem painel com `python bot_lords.py`.
 
-## Melhorias futuras
+## Funções extras
 
-| Melhoria | O que resolve | Dificuldade | Prioridade |
-| --- | --- | --- | --- |
-| Detectar filas de marcha livres | Não tentar enviar com tudo fora | Média | Alta |
-| Reabrir o jogo se fechar ou travar | Bot se perde se o jogo cair | Média | Alta |
-| Salvar o registro em arquivo | Histórico some ao fechar | Fácil | Alta |
-| Filtrar tipo e nível de recurso | Ex.: só minério nível 4+ | Média | Média |
-| Escolher a formação de tropas | Predefinição em vez da sugestão | Média | Média |
-| Horários de funcionamento | Rodar só em certos horários | Fácil | Média |
-| Aviso no celular (Telegram) | Saber quando pausar ou der erro | Fácil | Média |
-| Recompensas diárias e ajuda da guilda | Mais tarefas por rodada | Média | Média |
-| Enviar recursos à conta principal | Transferir o coletado | Difícil | Média |
-| Trocar de conta numa só instância | Economizar RAM | Difícil | Baixa |
-| Estatísticas por conta e por dia | Acompanhar ao longo do tempo | Média | Baixa |
-| Prints automáticos em erro | Achar onde travou | Fácil | Baixa |
-| Mais de uma resolução | Reaproveitar recortes | Difícil | Baixa |
+Cada função só age se o recorte dela estiver na pasta `imagens`. Sem o recorte, o bot pula a função e segue a coleta normal. O painel mostra, em Imagens de referência → Opcionais, quais recortes já existem.
+
+| Função | Como ligar | Recortes |
+| --- | --- | --- |
+| Contar filas livres | "Filas de marcha da conta" maior que 0 | `fila_ocupada.png` (ícone de marcha em andamento no mapa) |
+| Parar quando as filas enchem | Automático | `sem_filas.png` (aviso de filas cheias) |
+| Reabrir o jogo | Automático; ajuste "Pacote do jogo" e "Espera ao abrir o jogo" | Nenhum |
+| Filtrar tipo de recurso | "Tipos de recurso", ex.: `minerio, ouro` | Nome do recorte: `recurso_minerio.png` |
+| Nível mínimo | "Nível mínimo do recurso" | Nome `recurso_minerio_lv4.png` ou `nivel_1.png` … `nivel_9.png` (o "Lv." da janela do recurso) |
+| Formação de tropas | "Formação de tropas" = N | `formacao_N.png` (botão da predefinição na tela de marcha) |
+| Horários | Ex.: `08:00-12:00, 22:00-06:00` | Nenhum |
+| Aviso no Telegram | Token e Chat ID, botão Testar Telegram | Nenhum |
+| Ajuda da guilda | Chave "Ajudar a guilda" | `ajuda_guilda.png` |
+| Recompensas diárias | Chave "Resgatar recompensas" | `recompensa.png`, `botao_resgatar.png` |
+| Enviar à conta principal | Seção "Enviar recursos à conta principal" + "Transportar" na conta | `botao_transportar.png`, `botao_max.png`, `botao_enviar.png` |
+| Trocar de personagem | Coluna "Troca de personagem": nomes dos recortes tocados em ordem | Os recortes que você listar, ex.: `avatar, trocar_personagem, farm2` |
+| Estatísticas | Automático, em `estatisticas.json` e no painel | Nenhum |
+| Registro em arquivo | Automático, em `logs\AAAA-MM-DD.txt` | Nenhum |
+| Prints de erro | Chave "Salvar print quando travar"; ficam em `erros\` (50 mais novos) | Nenhum |
+| Outra resolução | "Resolução dos recortes" = a do BlueStacks quando recortou | Nenhum |
+
+**Trocar de personagem numa só instância:** coloque várias contas com a mesma porta e preencha a coluna Troca de personagem de cada uma com os botões que levam até aquele personagem. O bot faz as contas em ordem, trocando antes de cada uma.
+
+**Outra resolução:** o bot redimensiona os recortes na proporção da largura da tela. Funciona bem para mudanças de tamanho mantendo a proporção 16:9; se errar muito, recorte de novo na resolução nova.
 
 ## Checklist final
 

@@ -29,6 +29,7 @@ body{margin:0;background:var(--fundo);color:var(--texto);
 .luz{width:12px;height:12px;border-radius:50%;background:var(--suave)}
 .luz.rodando{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 25%,transparent)}
 .luz.aguardando{background:var(--latao)}
+.luz.fora_do_horario{background:var(--suave);box-shadow:0 0 0 3px var(--linha)}
 button{font:inherit;font-weight:600;cursor:pointer;border-radius:6px;border:1px solid var(--linha);
   background:var(--campo);color:var(--texto);padding:7px 14px}
 button:hover{border-color:var(--latao)}
@@ -52,8 +53,15 @@ h2{margin:0 0 12px;font-size:17px;font-weight:600}
 input[type=text],input[type=number]{font:inherit;width:100%;padding:6px 8px;border-radius:5px;
   border:1px solid var(--linha);background:var(--campo);color:var(--texto)}
 input.curto{width:80px}
+.tabela input[data-k=nome]{min-width:110px}
+.tabela input[data-k=troca]{min-width:180px}
 .campos{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
 label{display:block;font-size:13px;color:var(--suave)}
+label.linha{display:flex;align-items:center;gap:10px;color:var(--texto);font-size:14px}
+.lista-img.opc li{grid-column:1/-1}
+.lista-img .uso{color:var(--suave);font-size:12.5px}
+.tabela td.num,.tabela th.num{text-align:right}
+h3{font-size:14px;font-weight:600;margin:16px 0 8px}
 label input{margin-top:4px}
 .dica{font-size:12.5px;color:var(--suave);margin:4px 0 0}
 .resultado{font-size:13px;color:var(--suave)}
@@ -93,7 +101,7 @@ details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px
       <h2>Contas</h2>
       <div class="rolagem">
         <table class="tabela">
-          <thead><tr><th>Ativa</th><th>Nome</th><th>Porta ADB</th><th>Castelo X</th><th>Castelo Y</th><th>Última rodada</th><th></th></tr></thead>
+          <thead><tr><th>Ativa</th><th>Nome</th><th>Porta ADB</th><th>Castelo X</th><th>Castelo Y</th><th>Transportar</th><th>Troca de personagem</th><th>Última rodada</th><th></th></tr></thead>
           <tbody id="contas"></tbody>
         </table>
       </div>
@@ -110,6 +118,36 @@ details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px
         <label>Intervalo entre rodadas (min)<input type="number" id="intervalo_min" min="1"></label>
       </div>
       <p class="dica">“Telas para procurar” é quantas vezes o bot arrasta o mapa ao redor do castelo atrás de recursos livres.</p>
+      <h3>Filas, recursos e tropas</h3>
+      <div class="campos">
+        <label>Filas de marcha da conta (0 = não contar)<input type="number" id="filas_total" min="0" max="6"></label>
+        <label>Tipos de recurso (vazio = todos)<input type="text" id="recursos_tipos" placeholder="minerio, ouro"></label>
+        <label>Nível mínimo do recurso<input type="number" id="nivel_minimo" min="1" max="9"></label>
+        <label>Formação de tropas (0 = sugerida)<input type="number" id="formacao" min="0" max="9"></label>
+      </div>
+      <p class="dica">Filas livres usam <b>fila_ocupada.png</b>. Tipos vêm do nome do recorte (recurso_<b>minerio</b>_lv4.png). O nível vem do nome (_lv4) ou de nivel_1.png… nivel_9.png. A formação toca em formacao_N.png antes de marchar.</p>
+      <h3>Rotina</h3>
+      <div class="campos">
+        <label>Horários de funcionamento (vazio = sempre)<input type="text" id="horarios" placeholder="08:00-12:00, 14:00-23:30"></label>
+        <label class="linha"><input type="checkbox" class="chave" id="ajuda_guilda"> Ajudar a guilda</label>
+        <label class="linha"><input type="checkbox" class="chave" id="recompensas"> Resgatar recompensas diárias</label>
+      </div>
+      <h3>Enviar recursos à conta principal</h3>
+      <div class="campos">
+        <label class="linha"><input type="checkbox" class="chave" id="principal_ativo"> Ligado</label>
+        <label>Castelo da principal X<input type="number" id="principal_x"></label>
+        <label>Castelo da principal Y<input type="number" id="principal_y"></label>
+        <label>A cada quantas rodadas<input type="number" id="principal_a_cada_rodadas" min="1"></label>
+      </div>
+      <p class="dica">Só nas contas com “Transportar” marcado. Usa botao_transportar.png, botao_max.png e botao_enviar.png.</p>
+      <h3>Aviso no Telegram</h3>
+      <div class="campos">
+        <label>Token do bot<input type="text" id="telegram_token" placeholder="123456:ABC…" autocomplete="off"></label>
+        <label>Chat ID<input type="text" id="telegram_chat"></label>
+        <label class="linha"><input type="checkbox" class="chave" id="telegram_resumo"> Resumo a cada rodada</label>
+      </div>
+      <div class="acoes"><button id="btnTelegram">Testar Telegram</button><span class="msg" id="msgTelegram"></span></div>
+      <p class="dica">Crie o bot com o @BotFather e pegue o Chat ID com o @userinfobot. Pausas e erros sempre avisam.</p>
       <details>
         <summary>Ajustes avançados</summary>
         <div class="campos" style="margin-top:12px">
@@ -117,8 +155,12 @@ details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px
           <label>Precisão dos botões (0.5–0.99)<input type="number" step="0.01" id="confianca"></label>
           <label>Precisão dos recursos (0.5–0.99)<input type="number" step="0.01" id="confianca_recurso"></label>
           <label>Distância rótulo → campo (px)<input type="number" id="offset_campo"></label>
+          <label>Resolução dos recortes<input type="text" id="resolucao_base" placeholder="1280x720"></label>
+          <label>Pacote do jogo<input type="text" id="pacote_jogo"></label>
+          <label>Espera ao abrir o jogo (s)<input type="number" id="espera_abrir_jogo" min="5"></label>
+          <label class="linha"><input type="checkbox" class="chave" id="prints_erro"> Salvar print quando travar</label>
         </div>
-        <p class="dica">Se o bot não acha um botão que está na tela, diminua a precisão. Se toca em coisas erradas, aumente.</p>
+        <p class="dica">Se o bot não acha um botão que está na tela, diminua a precisão. Se toca em coisas erradas, aumente. A resolução é a do BlueStacks quando você recortou; em outra resolução o bot ajusta os recortes sozinho. Os prints de erro ficam na pasta <b>erros</b> e o registro diário na pasta <b>logs</b>.</p>
       </details>
       <div class="acoes">
         <button class="principal" id="btnSalvar">Salvar configurações</button>
@@ -132,7 +174,14 @@ details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px
       <h2>Imagens de referência</h2>
       <ul class="lista-img" id="imgObrig"></ul>
       <p class="dica" id="imgRecursos"></p>
+      <h3>Opcionais</h3>
+      <ul class="lista-img opc" id="imgOpc"></ul>
+      <p class="dica" id="imgExtras"></p>
       <p class="dica">Coloque os recortes na pasta <b>imagens</b>, ao lado do painel.py.</p>
+    </section>
+    <section>
+      <h2>Estatísticas</h2>
+      <div class="rolagem" id="estat"><p class="dica">Nada registrado ainda.</p></div>
     </section>
     <section>
       <h2>Registro</h2>
@@ -144,7 +193,7 @@ details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px
 <script>
 const $ = id => document.getElementById(id);
 let config = null, statusAtual = {};
-const NOMES_ESTADO = {parado:"Parado", rodando:"Rodando", aguardando:"Aguardando próxima rodada"};
+const NOMES_ESTADO = {parado:"Parado", rodando:"Rodando", aguardando:"Aguardando próxima rodada", fora_do_horario:"Fora do horário"};
 
 async function api(caminho, dados){
   const op = dados ? {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(dados)} : {};
@@ -163,9 +212,12 @@ function linhaConta(c, i){
     <td><input type="number" class="curto" data-k="porta" value="${c.porta}"></td>
     <td><input type="number" class="curto" data-k="castelo_x" value="${c.castelo_x}"></td>
     <td><input type="number" class="curto" data-k="castelo_y" value="${c.castelo_y}"></td>
+    <td><input type="checkbox" class="chave" data-k="transportar" ${c.transportar?"checked":""} aria-label="Transportar para a principal"></td>
+    <td><input type="text" data-k="troca" value="" placeholder="vazio = instância própria" title="Recortes tocados em ordem para trocar de personagem, separados por vírgula"></td>
     <td class="resultado">${st ? st.hora+" · "+escapar(st.resultado) : "–"}</td>
     <td style="white-space:nowrap"><button data-acao="testar">Testar</button> <button data-acao="remover" class="perigo" aria-label="Remover conta">✕</button></td>`;
   tr.querySelector('[data-k=nome]').value = c.nome;
+  tr.querySelector('[data-k=troca]').value = (c.troca||[]).join(", ");
   return tr;
 }
 function escapar(s){return String(s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]))}
@@ -174,7 +226,8 @@ function lerContasDaTela(){
   return [...$("contas").querySelectorAll("tr")].map(tr=>{
     const v = k => tr.querySelector(`[data-k=${k}]`);
     return {ativa:v("ativa").checked, nome:v("nome").value, porta:+v("porta").value,
-            castelo_x:+v("castelo_x").value, castelo_y:+v("castelo_y").value};
+            castelo_x:+v("castelo_x").value, castelo_y:+v("castelo_y").value,
+            transportar:v("transportar").checked, troca:v("troca").value.split(",").map(t=>t.trim()).filter(Boolean)};
   });
 }
 function desenharContas(){
@@ -182,10 +235,19 @@ function desenharContas(){
   config.contas.forEach((c,i)=>tb.appendChild(linhaConta(c,i)));
 }
 
-const CAMPOS = ["reino","marchas_por_conta","max_arrastos","intervalo_min","adb","confianca","confianca_recurso","offset_campo"];
+const CAMPOS = ["reino","marchas_por_conta","max_arrastos","intervalo_min","adb","confianca","confianca_recurso","offset_campo",
+  "filas_total","nivel_minimo","formacao","pacote_jogo","espera_abrir_jogo","telegram_token","telegram_chat"];
+const CHAVES = ["ajuda_guilda","recompensas","prints_erro","telegram_resumo"];
+const PRINCIPAL = ["x","y","a_cada_rodadas"];
 async function carregar(){
   config = await api("/api/config");
   CAMPOS.forEach(k=>$(k).value = config[k]);
+  CHAVES.forEach(k=>$(k).checked = !!config[k]);
+  $("recursos_tipos").value = config.recursos_tipos.join(", ");
+  $("horarios").value = config.horarios.map(h=>h.inicio+"-"+h.fim).join(", ");
+  $("resolucao_base").value = config.resolucao_base.join("x");
+  $("principal_ativo").checked = !!config.principal.ativo;
+  PRINCIPAL.forEach(k=>$("principal_"+k).value = config.principal[k]);
   desenharContas();
   carregarImagens();
 }
@@ -195,6 +257,18 @@ async function carregarImagens(){
   $("imgRecursos").textContent = d.recursos.length
     ? `Recursos (${d.recursos.length}): ${d.recursos.join(", ")}`
     : "Nenhuma imagem recurso_*.png ainda. Sem elas o bot não acha coletas no mapa.";
+  $("imgOpc").innerHTML = d.opcionais.map(i=>`<li class="${i.ok?"ok":""}">${i.nome}.png <span class="uso">${escapar(i.uso)}</span></li>`).join("");
+  $("imgExtras").textContent = d.extras.length ? `Níveis e formações: ${d.extras.join(", ")}` : "";
+}
+async function carregarEstat(){
+  const d = await api("/api/estatisticas");
+  if (!d.dias.length) return;
+  const cols = [["marchas","Marchas"],["rodadas","Rodadas"],["transportes","Transp."],["ajudas","Ajudas"],["recompensas","Recomp."],["pausas","Pausas"],["erros","Erros"]];
+  let h = `<table class="tabela"><thead><tr><th>Dia</th><th>Conta</th>${cols.map(c=>`<th class="num">${c[1]}</th>`).join("")}</tr></thead><tbody>`;
+  d.dias.forEach(dia=>Object.entries(dia.contas).forEach(([nome,v])=>{
+    h += `<tr><td>${dia.dia.slice(8)}/${dia.dia.slice(5,7)}</td><td>${escapar(nome)}</td>${cols.map(c=>`<td class="num">${v[c[0]]||0}</td>`).join("")}</tr>`;
+  }));
+  $("estat").innerHTML = h + "</tbody></table>";
 }
 
 $("contas").addEventListener("click", async e=>{
@@ -213,17 +287,26 @@ $("btnAddConta").onclick = ()=>{
   config.contas = lerContasDaTela();
   const ult = config.contas.at(-1);
   config.contas.push({nome:"farm"+(config.contas.length+1), porta: ult? ult.porta+10 : 5555,
-                      castelo_x:0, castelo_y:0, ativa:true});
+                      castelo_x:0, castelo_y:0, ativa:true, transportar:false, troca:[]});
   desenharContas();
 };
 $("btnSalvar").onclick = async ()=>{
   const dados = {contas: lerContasDaTela()};
   CAMPOS.forEach(k=>dados[k] = $(k).value);
+  CHAVES.forEach(k=>dados[k] = $(k).checked);
+  ["recursos_tipos","horarios","resolucao_base"].forEach(k=>dados[k] = $(k).value);
+  dados.principal = {ativo:$("principal_ativo").checked};
+  PRINCIPAL.forEach(k=>dados.principal[k] = $("principal_"+k).value);
   const r = await api("/api/config", dados);
   const m = $("msgSalvar");
   m.className = "msg " + (r.ok?"ok":"ruim");
   m.textContent = r.ok ? r.mensagem : r.erro;
   if (r.ok) config.contas = dados.contas;
+};
+$("btnTelegram").onclick = async ()=>{
+  const m = $("msgTelegram"); m.className="msg"; m.textContent="Enviando…";
+  const r = await api("/api/telegram",{token:$("telegram_token").value, chat:$("telegram_chat").value});
+  m.className = "msg " + (r.ok?"ok":"ruim"); m.textContent = r.mensagem;
 };
 $("btnIniciar").onclick = async ()=>{ await api("/api/iniciar",{}); atualizar(); };
 $("btnParar").onclick = async ()=>{ await api("/api/parar",{}); $("estado").textContent="Parando…"; };
@@ -249,10 +332,11 @@ async function atualizar(){
     if (noFim) log.scrollTop = log.scrollHeight;
   }
   if (mudouAtual && document.activeElement.closest("#contas")===null){
-    config.contas = lerContasDaTela(); desenharContas();
+    config.contas = lerContasDaTela();
+    desenharContas(); carregarEstat();
   }
 }
-carregar(); atualizar(); setInterval(atualizar, 2000);
+carregar(); carregarEstat(); atualizar(); setInterval(atualizar, 2000);
 </script>
 </body>
 </html>

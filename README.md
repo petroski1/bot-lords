@@ -9,10 +9,5 @@ Bot de coleta para Lords Mobile (BlueStacks + ADB + OpenCV) com painel web local
 ## Pendências
 
 - [ ] Recortar as imagens de referência em `imagens/` (10 obrigatórias + pelo menos um `recurso_*.png`)
+- [ ] Recortar as imagens opcionais das funções extras que quiser usar (lista no guia, seção Funções extras)
 - [ ] Testar numa instância real do BlueStacks e calibrar precisão e `offset_campo`
-- [ ] Detectar filas de marcha livres
-- [ ] Reabrir o jogo se ele fechar ou travar
-- [ ] Salvar o registro em arquivo
-- [ ] Não tentar de novo recursos já vistos/ocupados depois de arrastar o mapa
-- [ ] Filtrar tipo e nível de recurso, escolher formação de tropas
-- [ ] Horários de funcionamento e aviso no celular (Telegram)

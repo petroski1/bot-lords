@@ -4,6 +4,7 @@ e abra http://127.0.0.1:8000 no navegador (abre sozinho).
 """
 import os
 import glob
+from datetime import datetime
 import threading
 import webbrowser
 from collections import deque
@@ -42,25 +43,57 @@ def ler_config():
     return jsonify(bl.carregar_config())
 
 
+def horarios_de_texto(texto):
+    """'08:00-12:00, 14:00-23:30' -> [{"inicio": "08:00", "fim": "12:00"}, …]"""
+    saida = []
+    for parte in str(texto).replace(";", ",").split(","):
+        parte = parte.strip()
+        if not parte:
+            continue
+        ini, fim = (p.strip() for p in parte.split("-"))
+        for h in (ini, fim):
+            datetime.strptime(h, "%H:%M")
+        saida.append({"inicio": f"{int(ini[:-3]):02d}:{ini[-2:]}", "fim": f"{int(fim[:-3]):02d}:{fim[-2:]}"})
+    return saida
+
+
+def lista_de_texto(valor):
+    partes = valor if isinstance(valor, list) else str(valor).split(",")
+    return [str(p).strip() for p in partes if str(p).strip()]
+
+
 @app.post("/api/config")
 def gravar_config():
     novo = request.get_json(silent=True) or {}
     try:
         cfg = bl.carregar_config()
-        for chave in ("reino", "marchas_por_conta", "max_arrastos", "intervalo_min", "offset_campo"):
-            cfg[chave] = int(novo[chave])
+        for chave in ("reino", "marchas_por_conta", "max_arrastos", "intervalo_min", "offset_campo",
+                      "filas_total", "nivel_minimo", "formacao", "espera_abrir_jogo"):
+            cfg[chave] = max(0, int(novo[chave]))
+        cfg["intervalo_min"] = max(1, cfg["intervalo_min"])
         for chave in ("confianca", "confianca_recurso"):
             cfg[chave] = max(0.5, min(0.99, float(novo[chave])))
-        cfg["adb"] = str(novo["adb"]).strip()
+        for chave in ("adb", "pacote_jogo", "telegram_token", "telegram_chat"):
+            cfg[chave] = str(novo[chave]).strip()
+        for chave in ("ajuda_guilda", "recompensas", "prints_erro", "telegram_resumo"):
+            cfg[chave] = bool(novo[chave])
+        cfg["resolucao_base"] = [int(v) for v in str(novo["resolucao_base"]).lower().split("x")]
+        cfg["recursos_tipos"] = [t.lower() for t in lista_de_texto(novo["recursos_tipos"])]
+        cfg["horarios"] = horarios_de_texto(novo["horarios"])
+        p = novo["principal"]
+        cfg["principal"] = {"ativo": bool(p["ativo"]), "x": int(p["x"]), "y": int(p["y"]),
+                            "a_cada_rodadas": max(1, int(p["a_cada_rodadas"]))}
         contas = []
         for c in novo["contas"]:
             contas.append({"nome": str(c["nome"]).strip() or "conta",
                            "porta": int(c["porta"]),
                            "castelo_x": int(c["castelo_x"]),
                            "castelo_y": int(c["castelo_y"]),
-                           "ativa": bool(c.get("ativa", True))})
+                           "ativa": bool(c.get("ativa", True)),
+                           "transportar": bool(c.get("transportar", False)),
+                           "troca": lista_de_texto(c.get("troca", ""))})
         cfg["contas"] = contas
-    except (KeyError, ValueError, TypeError) as e:
+    except (KeyError, ValueError, TypeError, AttributeError) as e:
         return jsonify(ok=False, erro=f"Valor inválido: {e}"), 400
     bl.salvar_config(cfg)
     aviso = "Salvo. Vale a partir da próxima rodada." if rodando() else "Salvo."
@@ -103,7 +136,11 @@ def imagens():
     recursos = sorted(os.path.splitext(os.path.basename(p))[0]
                       for p in glob.glob(os.path.join(bl.PASTA_IMG, "recurso_*.png")))
     return jsonify(obrigatorias=[{"nome": n, "ok": existe(n)} for n in bl.IMAGENS_OBRIGATORIAS],
-                   recursos=recursos, verificacao=existe("verificacao"))
+                   recursos=recursos,
+                   opcionais=[{"nome": n, "uso": u, "ok": existe(n)} for n, u in bl.IMAGENS_OPCIONAIS.items()],
+                   extras=sorted(os.path.splitext(os.path.basename(p))[0]
+                                 for p in glob.glob(os.path.join(bl.PASTA_IMG, "*.png"))
+                                 if os.path.basename(p).startswith(("nivel_", "formacao_"))))
 
 
 @app.post("/api/testar")
@@ -111,6 +148,21 @@ def testar():
     dados = request.get_json(silent=True) or {}
     cfg = bl.carregar_config()
     ok, msg = bl.testar_conexao(dados.get("adb") or cfg["adb"], int(dados["porta"]))
+    return jsonify(ok=ok, mensagem=msg)
+
+
+@app.get("/api/estatisticas")
+def estatisticas():
+    dados = bl.Estatisticas().carregar()
+    dias = sorted(dados, reverse=True)[:14]
+    return jsonify(dias=[{"dia": d, "contas": dados[d]} for d in dias])
+
+
+@app.post("/api/telegram")
+def testar_telegram():
+    dados = request.get_json(silent=True) or {}
+    ok, msg = bl.enviar_telegram(str(dados.get("token", "")).strip(), str(dados.get("chat", "")).strip(),
+                                 "Teste do Bot Lords: o aviso no Telegram está funcionando.")
     return jsonify(ok=ok, mensagem=msg)
 
 
