@@ -138,6 +138,7 @@ Pegue só a parte que nunca muda. Evite números, timers, nomes de jogadores e p
 | botao_coletar.png | O botão que aparece ao tocar num recurso livre | Recurso livre clicado |
 | botao_marchar.png | O botão que confirma o envio da tropa | Tela de marcha |
 | fechar_x.png | O X vermelho de fechar janelas | Qualquer janela aberta |
+| fechar_x2.png, fechar_x3.png… | Outros estilos de X, se o jogo tiver mais de um (opcional) | Outras janelas |
 | recurso_*.png | Cada tipo de recurso no mapa, sem o número do nível | Mapa |
 | verificacao.png | A tela de verificação, se aparecer (opcional) | Quando o jogo pedir |
 

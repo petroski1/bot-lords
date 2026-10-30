@@ -685,8 +685,12 @@ class Emulador:
         return False
 
     def fechar_janelas(self):
+        # Aceita vários estilos de X: fechar_x.png, fechar_x2.png, fechar_x_popup.png…
+        nomes = sorted(os.path.splitext(os.path.basename(p))[0]
+                       for p in glob.glob(os.path.join(PASTA_IMG, "fechar_x*.png"))) or ["fechar_x"]
         for _ in range(3):
-            pos = self.achar("fechar_x")
+            tela = self.print_tela()
+            pos = next((p for p in (self.achar(n, tela=tela) for n in nomes) if p), None)
             if not pos:
                 return
             self.tocar(*pos)
