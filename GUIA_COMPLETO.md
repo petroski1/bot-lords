@@ -59,7 +59,7 @@ A instalação leva cerca de 20 minutos e só precisa ser feita uma vez.
    - Dê dois cliques em `iniciar_painel.bat`.
    - Uma janela preta abre (não feche, é o servidor do painel) e o navegador abre em `http://127.0.0.1:8000`.
 
-Se o Windows perguntar sobre o firewall ao abrir o painel, pode clicar em Cancelar. O painel só aceita conexões do seu próprio PC.
+Se o Windows perguntar sobre o firewall ao abrir o painel: sem Tailscale, pode clicar em Cancelar; com Tailscale, clique em Permitir para o celular conseguir abrir o painel. Em qualquer caso, o painel só aceita o seu próprio PC e os aparelhos do seu Tailscale.
 
 ## Configuração do BlueStacks
 
@@ -260,6 +260,27 @@ A cada rodada o bot relê o config.json e passa por cada conta ativa:
 8. Para ao atingir as marchas ou o limite de telas e registra o resultado.
 
 Depois da última conta, espera o intervalo. Se aparecer `verificacao.png`, a conta é pausada até a próxima rodada. O bot também roda sem painel com `python bot_lords.py`.
+
+## Acessar o painel de qualquer lugar (Tailscale)
+
+O Tailscale cria uma rede privada entre os seus aparelhos. Com ele, você abre o painel no celular ou em outro computador de qualquer lugar (4G, trabalho, viagem), sem abrir portas no roteador e sem deixar o painel na internet. Só aparelhos logados na sua conta do Tailscale conseguem entrar. É grátis para uso pessoal.
+
+1. **No PC do bot:** baixe o Tailscale em tailscale.com/download, instale e entre com uma conta (Google, Microsoft ou e-mail).
+2. **No celular:** instale o app Tailscale (Play Store ou App Store) e entre com a **mesma conta**. Deixe ligado.
+3. **Abra o painel de novo no PC** (feche a janela preta e rode o `iniciar_painel.bat`). A janela mostra `Painel no celular (Tailscale): http://100.x.y.z:8000` e o mesmo endereço aparece no topo do painel.
+4. Se o Windows perguntar sobre o firewall, clique em **Permitir**.
+5. **No celular**, com o Tailscale ligado, abra esse endereço no navegador. Salve nos favoritos ou adicione à tela inicial.
+
+Também funciona pelo nome do PC, se o MagicDNS do Tailscale estiver ligado (vem ligado por padrão): `http://nome-do-pc:8000`.
+
+| Problema | Solução |
+| --- | --- |
+| A janela diz "Tailscale não encontrado" | Confira se o Tailscale está aberto e conectado no PC e abra o painel de novo |
+| O celular não abre o endereço | Ligue o Tailscale no celular, com a mesma conta do PC |
+| Abre no PC, mas não no celular | Libere o Python no firewall do Windows (Painel de Controle → Firewall → Permitir um app) |
+| Não quer o acesso remoto | Desligue "Abrir no celular pelo Tailscale" nos Ajustes avançados e abra o painel de novo |
+
+O PC precisa estar ligado e com o painel aberto: o Tailscale só faz a ponte até ele.
 
 ## Funções extras
 

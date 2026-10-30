@@ -51,6 +51,7 @@ PADRAO = {
     "ajuda_guilda": True,
     "recompensas": True,
     "prints_erro": True,
+    "tailscale": True,
     "telegram_token": "",
     "telegram_chat": "",
     "telegram_resumo": False,

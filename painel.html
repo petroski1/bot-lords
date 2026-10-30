@@ -25,6 +25,8 @@ body{margin:0;background:var(--fundo);color:var(--texto);
 .topo{display:flex;align-items:center;gap:20px;flex-wrap:wrap;
   padding:18px 28px;border-bottom:2px solid var(--latao);background:var(--painel)}
 .topo h1{margin:0;font-size:22px;font-weight:700;letter-spacing:.01em;margin-right:auto}
+.remoto{font-size:13px;color:var(--suave);text-decoration:none;border:1px dashed var(--linha);border-radius:6px;padding:4px 10px}
+.remoto b{color:var(--texto);font-weight:600}
 .estado{display:flex;align-items:center;gap:10px;font-weight:600}
 .luz{width:12px;height:12px;border-radius:50%;background:var(--suave)}
 .luz.rodando{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 25%,transparent)}
@@ -39,7 +41,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--latao);outline-
 @media (prefers-color-scheme:dark){.principal{color:#14262d}}
 .perigo{color:var(--ruim);border-color:var(--ruim);background:transparent}
 .grade{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:22px;padding:24px 28px;max-width:1300px}
-@media (max-width:900px){.grade{grid-template-columns:1fr;padding:16px}}
+@media (max-width:900px){.grade{grid-template-columns:minmax(0,1fr);padding:16px}}
+@media (max-width:600px){.topo{padding:14px 16px}.numeros{padding:12px 16px 0;gap:18px}section{padding:16px}}
 section{background:var(--painel);border:1px solid var(--linha);border-radius:8px;padding:18px 20px}
 section+section{margin-top:22px}
 h2{margin:0 0 12px;font-size:17px;font-weight:600}
@@ -84,6 +87,7 @@ details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px
 <body>
 <header class="topo">
   <h1>Coleta automática</h1>
+  <a class="remoto" id="remoto" hidden title="Abra este endereço no celular com o Tailscale ligado"></a>
   <div class="estado"><span class="luz" id="luz"></span><span id="estado">Parado</span></div>
   <button class="principal" id="btnIniciar">Iniciar bot</button>
   <button class="perigo" id="btnParar" hidden>Parar bot</button>
@@ -159,8 +163,9 @@ details summary{cursor:pointer;color:var(--suave);font-size:14px;margin-top:14px
           <label>Pacote do jogo<input type="text" id="pacote_jogo"></label>
           <label>Espera ao abrir o jogo (s)<input type="number" id="espera_abrir_jogo" min="5"></label>
           <label class="linha"><input type="checkbox" class="chave" id="prints_erro"> Salvar print quando travar</label>
+          <label class="linha"><input type="checkbox" class="chave" id="tailscale"> Abrir no celular pelo Tailscale</label>
         </div>
-        <p class="dica">Se o bot não acha um botão que está na tela, diminua a precisão. Se toca em coisas erradas, aumente. A resolução é a do BlueStacks quando você recortou; em outra resolução o bot ajusta os recortes sozinho. Os prints de erro ficam na pasta <b>erros</b> e o registro diário na pasta <b>logs</b>.</p>
+        <p class="dica">Se o bot não acha um botão que está na tela, diminua a precisão. Se toca em coisas erradas, aumente. A resolução é a do BlueStacks quando você recortou; em outra resolução o bot ajusta os recortes sozinho. Os prints de erro ficam na pasta <b>erros</b> e o registro diário na pasta <b>logs</b>. A opção do Tailscale vale depois de fechar e abrir o painel de novo.</p>
       </details>
       <div class="acoes">
         <button class="principal" id="btnSalvar">Salvar configurações</button>
@@ -237,7 +242,7 @@ function desenharContas(){
 
 const CAMPOS = ["reino","marchas_por_conta","max_arrastos","intervalo_min","adb","confianca","confianca_recurso","offset_campo",
   "filas_total","nivel_minimo","formacao","pacote_jogo","espera_abrir_jogo","telegram_token","telegram_chat"];
-const CHAVES = ["ajuda_guilda","recompensas","prints_erro","telegram_resumo"];
+const CHAVES = ["ajuda_guilda","recompensas","prints_erro","telegram_resumo","tailscale"];
 const PRINCIPAL = ["x","y","a_cada_rodadas"];
 async function carregar(){
   config = await api("/api/config");
@@ -319,6 +324,9 @@ async function atualizar(){
   $("estado").textContent = NOMES_ESTADO[s.estado] + (s.conta_atual ? ` (${s.conta_atual})` : "");
   $("btnIniciar").hidden = s.estado!=="parado";
   $("btnParar").hidden = s.estado==="parado";
+  const rem = $("remoto");
+  rem.hidden = !s.remoto || location.hostname !== "127.0.0.1" && location.hostname !== "localhost";
+  if (s.remoto && !rem.hidden){ rem.href = s.remoto; rem.innerHTML = `No celular: <b>${escapar(s.remoto.replace("http://",""))}</b>`; }
   $("nMarchas").textContent = s.marchas;
   $("nRodadas").textContent = s.rodadas;
   if (s.proxima){
@@ -331,7 +339,7 @@ async function atualizar(){
     log.textContent = s.log.join("\n");
     if (noFim) log.scrollTop = log.scrollHeight;
   }
-  if (mudouAtual && document.activeElement.closest("#contas")===null){
+  if (config && mudouAtual && document.activeElement.closest("#contas")===null){
     config.contas = lerContasDaTela();
     desenharContas(); carregarEstat();
   }
